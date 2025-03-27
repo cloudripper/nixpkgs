@@ -15,7 +15,7 @@
 
 buildPythonPackage rec {
   pname = "google-cloud-webrisk";
-  version = "1.14.5";
+  version = "1.17.1";
   pyproject = true;
 
   disabled = pythonOlder "3.7";
@@ -23,7 +23,7 @@ buildPythonPackage rec {
   src = fetchPypi {
     pname = "google_cloud_webrisk";
     inherit version;
-    hash = "sha256-zlJhVcoqagtodRCVUVlWZODH+C7/H1KIj7vBYkZUs2A=";
+    hash = "sha256-apCNF81eeLIP4nNdzm9KeUlUO7pjN6quKTrl1xsUn0Q=";
   };
 
   build-system = [ setuptools ];

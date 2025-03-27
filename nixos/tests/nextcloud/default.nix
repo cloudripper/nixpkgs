@@ -44,13 +44,13 @@ let
 
     nodes = {
       client = { ... }: {};
-      nextcloud = {
+      nextcloud = { lib, ... }: {
         networking.firewall.allowedTCPPorts = [ 80 ];
         services.nextcloud = {
           enable = true;
           hostName = "nextcloud";
           https = false;
-          database.createLocally = true;
+          database.createLocally = lib.mkDefault true;
           config = {
             adminpassFile = "${pkgs.writeText "adminpass" config.adminpass}"; # Don't try this at home!
           };
@@ -80,7 +80,7 @@ let
               "${test-helpers.rclone} ${test-helpers.check-sample}"
           )
 
-      ${if builtins.isFunction test-helpers.extraTests then test-helpers.extraTests args else test-helpers.extraTests}
+      ${if pkgs.lib.isFunction test-helpers.extraTests then test-helpers.extraTests args else test-helpers.extraTests}
     '';
   };
 
@@ -104,9 +104,10 @@ let
         });
     in map callNextcloudTest [
       ./basic.nix
+      ./with-declarative-redis-and-secrets.nix
       ./with-mysql-and-memcached.nix
       ./with-postgresql-and-redis.nix
       ./with-objectstore.nix
     ];
 in
-listToAttrs (concatMap genTests [ 28 29 ])
+listToAttrs (concatMap genTests [ 29 30 31 ])

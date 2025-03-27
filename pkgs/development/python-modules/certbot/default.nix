@@ -23,21 +23,21 @@
 
 buildPythonPackage rec {
   pname = "certbot";
-  version = "2.11.0";
+  version = "3.1.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "certbot";
     repo = "certbot";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-Qee7lUjgliG5fmUWWPm3MzpGJHUF/DXZ08UA6kkWjjk=";
+    tag = "v${version}";
+    hash = "sha256-lYGJgUNDzX+bE64GJ+djdKR+DXmhpcNbFJrAEnP86yQ=";
   };
 
-  sourceRoot = "${src.name}/${pname}";
+  postPatch = "cd certbot"; # using sourceRoot would interfere with patches
 
-  nativeBuildInputs = [ setuptools ];
+  build-system = [ setuptools ];
 
-  propagatedBuildInputs = [
+  dependencies = [
     configargparse
     acme
     configobj
@@ -61,7 +61,11 @@ buildPythonPackage rec {
     pytest-xdist
   ];
 
-  pytestFlagsArray = [ "-o cache_dir=$(mktemp -d)" ];
+  pytestFlagsArray = [
+    "-p no:cacheprovider"
+    "-W"
+    "ignore::DeprecationWarning"
+  ];
 
   makeWrapperArgs = [ "--prefix PATH : ${dialog}/bin" ];
 
@@ -80,8 +84,10 @@ buildPythonPackage rec {
     '';
 
   meta = with lib; {
+    # AttributeError: module 'josepy' has no attribute 'ComparableX509'
+    broken = lib.versionAtLeast josepy.version "2";
     homepage = "https://github.com/certbot/certbot";
-    changelog = "https://github.com/certbot/certbot/blob/${src.rev}/certbot/CHANGELOG.md";
+    changelog = "https://github.com/certbot/certbot/blob/${src.tag}/certbot/CHANGELOG.md";
     description = "ACME client that can obtain certs and extensibly update server configurations";
     platforms = platforms.unix;
     mainProgram = "certbot";

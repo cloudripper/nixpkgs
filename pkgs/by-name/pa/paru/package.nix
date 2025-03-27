@@ -11,34 +11,23 @@
   stdenv,
 }:
 
-let
-  # only libalpm v14.x.x is supported
-  pacman_6 = pacman.overrideAttrs (previousAttrs: {
-    version = "6.1.0";
-    src = previousAttrs.src.overrideAttrs {
-      outputHash = "sha256-uHBq1A//YSqFATlyqjC5ZgmvPkNKqp7sVew+nbmLH78=";
-    };
-    hardeningDisable = [ "fortify3" ];
-  });
-in
 rustPlatform.buildRustPackage rec {
   pname = "paru";
-  version = "2.0.3";
+  version = "2.0.4";
 
   src = fetchFromGitHub {
     owner = "Morganamilo";
     repo = "paru";
     rev = "v${version}";
-    hash = "sha256-0+N1WkjHd2DREoS1pImXXvlJ3wXoXEBxFBtupjXqyP8=";
+    hash = "sha256-VFIeDsIuPbWGf+vio5i8qGUBB+spP/7SwYwmQkMjtL8=";
   };
 
-  cargoLock = {
-    lockFile = ./Cargo.lock;
-    outputHashes = {
-      "alpm-3.0.4" = "sha256-cfIOCUyb+kDAT3Bn50oKuJzIyMyeFyOPBFQMkAgMocI=";
-      "aur-depends-3.0.0" = "sha256-Z/vCd4g3ic29vC0DXFHTT167xFAXYxzO2YQc0XQOerE=";
-    };
-  };
+  cargoPatches = [
+    ./cargo-lock.patch
+  ];
+
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-3tKoL2I6DHrRodhWFOi3mSxk2P5SxCush/Hz9Dpyo3U=";
 
   nativeBuildInputs = [
     gettext
@@ -50,11 +39,13 @@ rustPlatform.buildRustPackage rec {
   buildInputs = [
     libarchive
     openssl
-    pacman_6
+    pacman
   ];
 
-  # https://aur.archlinux.org/packages/paru#comment-961914
-  buildFeatures = lib.optionals stdenv.isAarch64 [ "generate" ];
+  # https://github.com/Morganamilo/paru/issues/1154#issuecomment-2002357898
+  buildFeatures = lib.optionals stdenv.hostPlatform.isAarch64 [
+    "generate"
+  ];
 
   postBuild = ''
     sh ./scripts/mkmo locale/
@@ -62,9 +53,9 @@ rustPlatform.buildRustPackage rec {
 
   postInstall = ''
     installManPage man/paru.8 man/paru.conf.5
-    installShellCompletion --bash completions/bash
-    installShellCompletion --fish completions/fish
-    installShellCompletion --zsh completions/zsh
+    installShellCompletion --name paru.bash --bash completions/bash
+    installShellCompletion --name paru.fish --fish completions/fish
+    installShellCompletion --name _paru --zsh completions/zsh
     cp -r locale "$out/share/"
   '';
 

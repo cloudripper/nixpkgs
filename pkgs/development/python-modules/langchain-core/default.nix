@@ -5,22 +5,23 @@
   fetchFromGitHub,
 
   # build-system
-  poetry-core,
+  pdm-backend,
 
   # dependencies
   jsonpatch,
   langsmith,
   packaging,
+  pydantic,
   pyyaml,
   tenacity,
-
-  # optional-dependencies
-  pydantic,
+  typing-extensions,
 
   # tests
   freezegun,
   grandalf,
   httpx,
+  langchain-core,
+  langchain-tests,
   numpy,
   pytest-asyncio,
   pytest-mock,
@@ -29,43 +30,56 @@
   syrupy,
 
   # passthru
-  writeScript,
+  nix-update-script,
 }:
 
 buildPythonPackage rec {
   pname = "langchain-core";
-  version = "0.3.0";
+  version = "0.3.47";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "langchain-ai";
     repo = "langchain";
-    rev = "refs/tags/langchain-core==${version}";
-    hash = "sha256-BCqrJuy7R2jT3QmTvYwn8gHX7bc6Tq8HArK+F3PjBhw=";
+    tag = "langchain-core==${version}";
+    hash = "sha256-UUsT8RvBK4TJNrAwXjv/LPzHrgTEoSewUb+8pHG6Xa8=";
   };
 
   sourceRoot = "${src.name}/libs/core";
 
-  build-system = [ poetry-core ];
+  patches = [
+    # Remove dependency on blockbuster (not available in nixpkgs due to dependency on forbiddenfruit)
+    ./rm-blockbuster.patch
+  ];
+
+  build-system = [ pdm-backend ];
+
+  pythonRelaxDeps = [ "tenacity" ];
+
+  pythonRemoveDependencies = [
+    "blockbuster"
+  ];
 
   dependencies = [
     jsonpatch
     langsmith
     packaging
+    pydantic
     pyyaml
     tenacity
+    typing-extensions
   ];
 
-  optional-dependencies = {
-    pydantic = [ pydantic ];
-  };
-
   pythonImportsCheck = [ "langchain_core" ];
+
+  # avoid infinite recursion
+  doCheck = false;
 
   nativeCheckInputs = [
     freezegun
     grandalf
     httpx
+    langchain-tests
     numpy
     pytest-asyncio
     pytest-mock
@@ -76,23 +90,17 @@ buildPythonPackage rec {
 
   pytestFlagsArray = [ "tests/unit_tests" ];
 
-  # don't add langchain-standard-tests to nativeCheckInputs
-  # to avoid circular import
-  preCheck = ''
-    export PYTHONPATH=${src}/libs/standard-tests:$PYTHONPATH
-  '';
-
   passthru = {
-    updateScript = writeScript "update.sh" ''
-      #!/usr/bin/env nix-shell
-      #!nix-shell -i bash -p nix-update
+    tests.pytest = langchain-core.overridePythonAttrs (_: {
+      doCheck = true;
+    });
 
-      set -u -o pipefail +e
-      nix-update --commit --version-regex 'langchain-core==(.*)' python3Packages.langchain-core
-      nix-update --commit --version-regex 'langchain-text-splitters==(.*)' python3Packages.langchain-text-splitters
-      nix-update --commit --version-regex 'langchain==(.*)' python3Packages.langchain
-      nix-update --commit --version-regex 'langchain-community==(.*)' python3Packages.langchain-community
-    '';
+    updateScript = nix-update-script {
+      extraArgs = [
+        "--version-regex"
+        "^langchain-core==([0-9.]+)$"
+      ];
+    };
   };
 
   disabledTests =
@@ -100,16 +108,32 @@ buildPythonPackage rec {
       # flaky, sometimes fail to strip uuid from AIMessageChunk before comparing to test value
       "test_map_stream"
       # Compares with machine-specific timings
-      "test_rate_limit_invoke"
-      "test_rate_limit_stream"
+      "test_rate_limit"
       # flaky: assert (1726352133.7419367 - 1726352132.2697523) < 1
       "test_benchmark_model"
 
       # TypeError: exceptions must be derived from Warning, not <class 'NoneType'>
       "test_chat_prompt_template_variable_names"
       "test_create_model_v2"
+
+      # Comparison with magic strings
+      "test_prompt_with_chat_model"
+      "test_prompt_with_chat_model_async"
+      "test_prompt_with_llm"
+      "test_prompt_with_llm_parser"
+      "test_prompt_with_llm_and_async_lambda"
+      "test_prompt_with_chat_model_and_parser"
+      "test_combining_sequences"
+
+      # AssertionError: assert [+ received] == [- snapshot]
+      "test_chat_input_schema"
+      # AssertionError: assert {'$defs': {'D...ype': 'array'} == {'$defs': {'D...ype': 'array'}
+      "test_schemas"
+      # AssertionError: assert [+ received] == [- snapshot]
+      "test_graph_sequence_map"
+      "test_representation_of_runnables"
     ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       # Langchain-core the following tests due to the test comparing execution time with magic values.
       "test_queue_for_streaming_via_sync_call"
       "test_same_event_loop"
@@ -118,11 +142,16 @@ buildPythonPackage rec {
       "test_rate_limit_astream"
     ];
 
+  disabledTestPaths = [ "tests/unit_tests/runnables/test_runnable_events_v2.py" ];
+
   meta = {
     description = "Building applications with LLMs through composability";
     homepage = "https://github.com/langchain-ai/langchain/tree/master/libs/core";
     changelog = "https://github.com/langchain-ai/langchain/releases/tag/v${version}";
     license = lib.licenses.mit;
-    maintainers = with lib.maintainers; [ natsukium ];
+    maintainers = with lib.maintainers; [
+      natsukium
+      sarahec
+    ];
   };
 }

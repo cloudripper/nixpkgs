@@ -2,16 +2,14 @@
   stdenv,
   lib,
   fetchFromGitHub,
-  fetchpatch,
   buildMozillaMach,
   nixosTests,
-  python311,
 }:
 
 (
   (buildMozillaMach rec {
     pname = "floorp";
-    packageVersion = "11.17.8";
+    packageVersion = "11.24.0";
     applicationName = "Floorp";
     binaryName = "floorp";
     branding = "browser/branding/official";
@@ -19,18 +17,17 @@
     allowAddonSideload = true;
 
     # Must match the contents of `browser/config/version.txt` in the source tree
-    version = "128.2.0";
+    version = "128.9.0";
 
     src = fetchFromGitHub {
       owner = "Floorp-Projects";
       repo = "Floorp";
       fetchSubmodules = true;
       rev = "v${packageVersion}";
-      hash = "sha256-1hHp8LZxGJmLSoe8NNzmx2QxPosrIcLqggeGhf+iMPI=";
+      hash = "sha256-3Y34HUtxEqcEr2DC2frOdbCiq59oWcDLIFABl+N5K+Q=";
     };
 
     extraConfigureFlags = [
-      "--with-app-name=${pname}"
       "--with-app-basename=${applicationName}"
       "--with-unsigned-addon-scopes=app,system"
       "--enable-proxy-bypass-protection"
@@ -52,7 +49,6 @@
       homepage = "https://floorp.app/";
       maintainers = with lib.maintainers; [ christoph-heiss ];
       platforms = lib.platforms.unix;
-      badPlatforms = lib.platforms.darwin;
       broken = stdenv.buildPlatform.is32bit;
       # since Firefox 60, build on 32-bit platforms fails with "out of memory".
       # not in `badPlatforms` because cross-compilation on 64-bit machine might work.
@@ -60,7 +56,9 @@
       license = lib.licenses.mpl20;
       mainProgram = "floorp";
     };
-    tests = [ nixosTests.floorp ];
+    tests = {
+      inherit (nixosTests) floorp;
+    };
   }).override
   {
     # Upstream build configuration can be found at
@@ -75,12 +73,4 @@
   (prev: {
     MOZ_DATA_REPORTING = "";
     MOZ_TELEMETRY_REPORTING = "";
-
-    # Upstream already includes some of the bugfix patches that are applied by
-    # `buildMozillaMach`. Pick out only the relevant ones for Floorp and override
-    # the list here.
-    patches = [
-      ../firefox/env_var_for_system_dir-ff111.patch
-      ../firefox/no-buildconfig-ffx121.patch
-    ];
   })

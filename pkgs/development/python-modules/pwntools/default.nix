@@ -33,17 +33,17 @@ let
 in
 buildPythonPackage rec {
   pname = "pwntools";
-  version = "4.13.0";
+  version = "4.14.0";
   pyproject = true;
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-HVyiU4PsEPtk4o0ULB2Gj5HqHFOpPTUx0wFdgwgo08M=";
+    hash = "sha256-g7MkfeCD3/r6w79A9NFFVzLxbiXOMQX9CbVawPDRLoM=";
   };
 
   postPatch = ''
     # Upstream hardcoded the check for the command `gdb-multiarch`;
-    # Forcefully use the provided debugger, as `gdb` (hence `pwndbg`) is built with multiarch in `nixpkgs`.
+    # Forcefully use the provided debugger as `gdb`.
     sed -i 's/gdb-multiarch/${debuggerName}/' pwnlib/gdb.py
   '';
 
@@ -79,10 +79,12 @@ buildPythonPackage rec {
   doCheck = false; # no setuptools tests for the package
 
   postInstall = ''
-    installShellCompletion --bash extra/bash_completion.d/shellcraft
+    installShellCompletion --cmd pwn \
+      --bash extra/bash_completion.d/pwn \
+      --zsh extra/zsh_completion/_pwn
   '';
 
-  postFixup = lib.optionalString (!stdenv.isDarwin) ''
+  postFixup = lib.optionalString (!stdenv.hostPlatform.isDarwin) ''
     mkdir -p "$out/bin"
     makeWrapper "${debugger}/bin/${debuggerName}" "$out/bin/pwntools-gdb"
   '';

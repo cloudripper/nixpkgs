@@ -13,6 +13,10 @@
 , cargo
 , jq
 , libiconv
+# Controls codegen parallelization for all crates.
+# May be overriden on a per-crate level.
+# See <https://doc.rust-lang.org/rustc/codegen-options/index.html#codegen-units>
+, defaultCodegenUnits ? 1
 }:
 
 let
@@ -283,7 +287,7 @@ crate_: lib.makeOverridable
         ++ lib.optionals stdenv.hasCC [ stdenv.cc ]
         ++ lib.optionals stdenv.buildPlatform.isDarwin [ libiconv ]
         ++ (crate.nativeBuildInputs or [ ]) ++ nativeBuildInputs_;
-      buildInputs = lib.optionals stdenv.isDarwin [ libiconv ] ++ (crate.buildInputs or [ ]) ++ buildInputs_;
+      buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [ libiconv ] ++ (crate.buildInputs or [ ]) ++ buildInputs_;
       dependencies = map lib.getLib dependencies_;
       buildDependencies = map lib.getLib buildDependencies_;
 
@@ -339,7 +343,7 @@ crate_: lib.makeOverridable
       colors = lib.attrByPath [ "colors" ] "always" crate;
       extraLinkFlags = lib.concatStringsSep " " (crate.extraLinkFlags or [ ]);
       edition = crate.edition or null;
-      codegenUnits = if crate ? codegenUnits then crate.codegenUnits else 1;
+      codegenUnits = if crate ? codegenUnits then crate.codegenUnits else defaultCodegenUnits;
       extraRustcOpts =
         lib.optionals (crate ? extraRustcOpts) crate.extraRustcOpts
           ++ extraRustcOpts_

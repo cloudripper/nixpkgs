@@ -15,7 +15,7 @@
 
 buildPythonPackage rec {
   pname = "google-cloud-container";
-  version = "2.51.0";
+  version = "2.56.1";
   pyproject = true;
 
   disabled = pythonOlder "3.7";
@@ -23,7 +23,7 @@ buildPythonPackage rec {
   src = fetchPypi {
     pname = "google_cloud_container";
     inherit version;
-    hash = "sha256-q1F+/uzyVY10pP/XrF1sL0+6o7uKfITSuZTc+NqA/Zw=";
+    hash = "sha256-QADuXKwndJvGDEWTftNIGRX7vwmJJdkoUjcC1w8vT6E=";
   };
 
   build-system = [ setuptools ];

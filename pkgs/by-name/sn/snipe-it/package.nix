@@ -1,23 +1,24 @@
-{ lib
-, dataDir ? "/var/lib/snipe-it"
-, fetchFromGitHub
-, mariadb
-, nixosTests
-, php
+{
+  lib,
+  dataDir ? "/var/lib/snipe-it",
+  fetchFromGitHub,
+  mariadb,
+  nixosTests,
+  php84,
 }:
 
-php.buildComposerProject (finalAttrs: {
+php84.buildComposerProject2 (finalAttrs: {
   pname = "snipe-it";
-  version = "7.0.11";
+  version = "8.0.4";
 
   src = fetchFromGitHub {
     owner = "snipe";
     repo = "snipe-it";
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-XMsLK6IKbnlYZk7tPYq++prv+28FefEbahOqmeEAAiY=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-iS9PfWZlwWfxMkCJS7Lbp2+XxoGJz2yedn4nsu34YhU=";
   };
 
-  vendorHash = "sha256-8YZD6Q1Mb5VUGL/KQnYTtXKL3aziPfAmwvVthDdyBYY=";
+  vendorHash = "sha256-6lNNwktcWU5FlzSPl1G4TW8OGMzLbWeVebNOvuYx9ls=";
 
   postInstall = ''
     snipe_it_out="$out/share/php/snipe-it"
@@ -36,15 +37,15 @@ php.buildComposerProject (finalAttrs: {
 
     chmod +x $snipe_it_out/artisan
 
-    substituteInPlace $snipe_it_out/config/database.php --replace "env('DB_DUMP_PATH', '/usr/local/bin')" "env('DB_DUMP_PATH', '${mariadb}/bin')"
+    substituteInPlace $snipe_it_out/config/database.php --replace-fail "env('DB_DUMP_PATH', '/usr/local/bin')" "env('DB_DUMP_PATH', '${mariadb}/bin')"
   '';
 
   passthru = {
     tests = nixosTests.snipe-it;
-    phpPackage = php;
+    phpPackage = php84;
   };
 
-  meta = with lib; {
+  meta = {
     description = "Free open source IT asset/license management system";
     longDescription = ''
       Snipe-IT was made for IT asset management, to enable IT departments to track
@@ -54,8 +55,8 @@ php.buildComposerProject (finalAttrs: {
     '';
     homepage = "https://snipeitapp.com/";
     changelog = "https://github.com/snipe/snipe-it/releases/tag/v${finalAttrs.version}";
-    license = licenses.agpl3Only;
-    maintainers = with maintainers; [ yayayayaka ];
-    platforms = platforms.linux;
+    license = lib.licenses.agpl3Only;
+    maintainers = with lib.maintainers; [ yayayayaka ];
+    platforms = lib.platforms.linux;
   };
 })

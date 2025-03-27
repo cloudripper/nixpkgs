@@ -54,13 +54,13 @@ buildPythonPackage rec {
     gevent
     pytestCheckHook
     process-tests
-    pkgs.redis
+    pkgs.valkey
   ] ++ optional-dependencies.django;
 
   # For Django tests
   preCheck = "export DJANGO_SETTINGS_MODULE=test_project.settings";
 
-  disabledTests = lib.optionals stdenv.isDarwin [
+  disabledTests = lib.optionals stdenv.hostPlatform.isDarwin [
     # fail on Darwin because it defaults to multiprocessing `spawn`
     "test_reset_signalizes"
     "test_reset_all_signalizes"

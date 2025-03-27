@@ -13,14 +13,14 @@
 
 buildPythonPackage rec {
   pname = "krb5";
-  version = "0.6.0";
+  version = "0.7.1";
   pyproject = true;
 
-  disabled = pythonOlder "3.7";
+  disabled = pythonOlder "3.8";
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-cSugkvvjoo7BiCC7Gx7SzBA3t1xccDP5cMaoyXu9Egk=";
+    hash = "sha256-7V8T1QMUibENhlXAraKKgcI5Gz7LigjG1znh5YNbxFA=";
   };
 
   build-system = [
@@ -43,6 +43,6 @@ buildPythonPackage rec {
     homepage = "https://github.com/jborean93/pykrb5";
     license = licenses.mit;
     maintainers = teams.deshaw.members;
-    broken = stdenv.isDarwin; # TODO: figure out how to build on Darwin
+    broken = stdenv.hostPlatform.isDarwin; # TODO: figure out how to build on Darwin
   };
 }

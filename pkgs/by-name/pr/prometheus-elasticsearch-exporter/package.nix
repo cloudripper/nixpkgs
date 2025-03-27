@@ -5,16 +5,16 @@
 }:
 buildGoModule rec {
   pname = "elasticsearch_exporter";
-  version = "1.7.0";
+  version = "1.9.0";
 
   src = fetchFromGitHub {
     owner = "prometheus-community";
     repo = "elasticsearch_exporter";
     rev = "v${version}";
-    hash = "sha256-a70huy6J0Ob9LkLuCSVZqJChTo/4cPufbkq1v/QcKE4=";
+    hash = "sha256-v6Fi5O/87jhFI1h6qWyWb61X+dTjcqS3Fi9/MPQSr8Y=";
   };
 
-  vendorHash = "sha256-5uQfeDRi7EMcUCkXdbNlSe1IUpv6e5ueXtZ4C5SWAmw=";
+  vendorHash = "sha256-NAaVz5AqhfaEiWqBAeQZVWwjMIwX9jEw0oycXq7uLNw=";
 
   meta = with lib; {
     description = "Elasticsearch stats exporter for Prometheus";

@@ -12,7 +12,7 @@
 
 buildPythonPackage rec {
   pname = "karton-core";
-  version = "5.5.0";
+  version = "5.6.0";
   pyproject = true;
 
   disabled = pythonOlder "3.8";
@@ -20,11 +20,13 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "CERT-Polska";
     repo = "karton";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-fjzZPq98AwNT+tiTvKZY2QsSD+FRUFx+oY84hPP7QdI=";
+    tag = "v${version}";
+    hash = "sha256-I5kJO4C//zlmnptuC1c8BJBV6h3pTEuo6EsXuublUCs=";
   };
 
   build-system = [ setuptools ];
+
+  pythonRelaxDeps = [ "boto3" ];
 
   dependencies = [
     boto3

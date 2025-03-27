@@ -3,9 +3,9 @@
   lib,
   fetchFromGitLab,
   fetchpatch,
-  fetchpatch2,
   gitUpdater,
   linkFarm,
+  replaceVars,
   nixosTests,
   ayatana-indicator-datetime,
   bash,
@@ -34,12 +34,13 @@
   lomiri-app-launch,
   lomiri-download-manager,
   lomiri-indicator-network,
-  lomiri-ui-toolkit,
+  lomiri-notifications,
   lomiri-settings-components,
   lomiri-system-settings-unwrapped,
   lomiri-schemas,
-  lomiri-notifications,
+  lomiri-telephony-service,
   lomiri-thumbnailer,
+  lomiri-ui-toolkit,
   maliit-keyboard,
   mir_2_15,
   nixos-icons,
@@ -54,10 +55,8 @@
   qtmir,
   qtmultimedia,
   qtsvg,
-  telephony-service,
   wrapGAppsHook3,
   wrapQtAppsHook,
-  xwayland,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -116,7 +115,9 @@ stdenv.mkDerivation (finalAttrs: {
     })
 
     ./9901-lomiri-Disable-Wizard.patch
-    ./9902-lomiri-Check-NIXOS_XKB_LAYOUTS.patch
+    (replaceVars ./9902-Layout-fallback-file.patch {
+      nixosLayoutFile = "/etc/" + finalAttrs.finalPackage.passthru.etcLayoutsFile;
+    })
   ];
 
   postPatch =
@@ -207,9 +208,9 @@ stdenv.mkDerivation (finalAttrs: {
     hfd-service
     lomiri-notifications
     lomiri-settings-components
+    lomiri-telephony-service
     lomiri-thumbnailer
     qtmultimedia
-    telephony-service
   ];
 
   nativeCheckInputs = [ (python3.withPackages (ps: with ps; [ python-dbusmock ])) ];
@@ -269,14 +270,8 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   passthru = {
-    tests = {
-      inherit (nixosTests.lomiri)
-        greeter
-        desktop-basics
-        desktop-appinteractions
-        desktop-ayatana-indicators
-        ;
-    };
+    etcLayoutsFile = "lomiri/keymaps";
+    tests = nixosTests.lomiri;
     updateScript = gitUpdater { };
     greeter = linkFarm "lomiri-greeter" [
       {

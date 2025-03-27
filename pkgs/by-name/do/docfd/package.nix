@@ -8,7 +8,7 @@
   dune_3,
   makeWrapper,
   pandoc,
-  poppler_utils,
+  poppler-utils,
   testers,
   docfd,
 }:
@@ -16,7 +16,7 @@
 let
   # Needed for x86_64-darwin
   buildDunePackage' = ocamlPackages.buildDunePackage.override {
-    stdenv = if stdenv.isDarwin then overrideSDK stdenv "11.0" else stdenv;
+    stdenv = if stdenv.hostPlatform.isDarwin then overrideSDK stdenv "11.0" else stdenv;
   };
 in
 buildDunePackage' rec {
@@ -61,7 +61,7 @@ buildDunePackage' rec {
     wrapProgram $out/bin/docfd --prefix PATH : "${
       lib.makeBinPath [
         pandoc
-        poppler_utils
+        poppler-utils
       ]
     }"
   '';

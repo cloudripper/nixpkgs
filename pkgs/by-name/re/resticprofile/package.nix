@@ -1,6 +1,6 @@
 {
   lib,
-  buildGoModule,
+  buildGo123Module,
   fetchFromGitHub,
   installShellFiles,
   restic,
@@ -9,15 +9,15 @@
   resticprofile,
 }:
 
-buildGoModule rec {
+buildGo123Module rec {
   pname = "resticprofile";
-  version = "0.27.1";
+  version = "0.29.1";
 
   src = fetchFromGitHub {
     owner = "creativeprojects";
     repo = "resticprofile";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-HHFeWsEO1KUzL5Y6Iwy7MylA//JYzY3h1EwKrUHfXpY=";
+    tag = "v${version}";
+    hash = "sha256-6s58rI+YMu6sCV8UsG9GOdF46Br3cMWIUqciVd2d4dY=";
   };
 
   postPatch = ''
@@ -32,9 +32,10 @@ buildGoModule rec {
 
   '';
 
-  vendorHash = "sha256-t2R5uNsliSn+rIvRM0vT6lQJY62DhhozXnONiCJ9CMc=";
+  vendorHash = "sha256-N39zPGos5EYRXGylsHFSjJ4EcQ9jahBOGV8xn7fF7gc=";
 
   ldflags = [
+    "-X main.version=${version}"
     "-X main.commit=${src.rev}"
     "-X main.date=unknown"
     "-X main.builtBy=nixpkgs"

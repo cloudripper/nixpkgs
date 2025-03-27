@@ -19,19 +19,19 @@
   libkvmi,
 
   xenSupport ? true,
-  xen-slim,
+  xen,
 }:
 
 let
   pname = "libvmi";
-  version = "0.14.0-unstable-2024-09-04";
+  version = "0.14.0-unstable-2025-02-27";
   libVersion = "0.0.15";
 
   src = fetchFromGitHub {
     owner = "libvmi";
     repo = "libvmi";
-    rev = "033a0ec5468c29a93888385fd722798a2ca639b7";
-    hash = "sha256-NPcOqmTO4EligGsOTfyO6Bc1duyAoMuX85ICVIOWFE8=";
+    rev = "f02aeb751fd27bd4ae753dcd5904a4ef3232821e";
+    hash = "sha256-h5kevP8B1iKJBZMaEaxkrAIgnUy7yOCnN3G3oYf/eNo=";
   };
 in
 
@@ -58,7 +58,7 @@ stdenv.mkDerivation {
       json_c
       libvirt
     ]
-    ++ lib.optionals xenSupport [ xen-slim ]
+    ++ lib.optionals xenSupport [ xen ]
     ++ lib.optionals (!legacyKVM) [ libkvmi ]
     ++ lib.optionals withVMIFS [ fuse ];
 
@@ -71,7 +71,7 @@ stdenv.mkDerivation {
   postFixup = lib.optionalString xenSupport ''
     libvmi="$lib/lib/libvmi.so.${libVersion}"
     oldrpath=$(patchelf --print-rpath "$libvmi")
-    patchelf --set-rpath "$oldrpath:${lib.makeLibraryPath [ xen-slim ]}" "$libvmi"
+    patchelf --set-rpath "$oldrpath:${lib.makeLibraryPath [ xen ]}" "$libvmi"
   '';
 
   passthru = {

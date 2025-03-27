@@ -3,22 +3,20 @@
   lib,
   fetchFromGitHub,
   cmake,
-  qttools,
+  libsForQt5,
   pkg-config,
-  wrapQtAppsHook,
   dtkwidget,
   dde-qt-dbus-factory,
   dde-tray-loader,
   deepin-pdfium,
   qt5integration,
   qt5platform-plugins,
-  taglib,
+  taglib_1,
   ffmpeg,
   ffmpegthumbnailer,
   pcre,
   lucenepp,
   boost,
-  dbus,
 }:
 
 stdenv.mkDerivation rec {
@@ -34,9 +32,9 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [
     cmake
-    qttools
+    libsForQt5.qttools
     pkg-config
-    wrapQtAppsHook
+    libsForQt5.wrapQtAppsHook
   ];
 
   buildInputs = [
@@ -46,7 +44,7 @@ stdenv.mkDerivation rec {
     deepin-pdfium
     qt5integration
     qt5platform-plugins
-    taglib
+    taglib_1
     ffmpeg
     ffmpegthumbnailer
     pcre

@@ -9,7 +9,7 @@
 , installShellFiles
 , jq
 , libayatana-appindicator
-, libsoup
+, libsoup_2_4
 , makeDesktopItem
 , mkYarnPackage
 , openssl
@@ -18,7 +18,7 @@
 , rustPlatform
 , stdenv
 , testers
-, webkitgtk
+, webkitgtk_4_0
 }:
 
 let
@@ -46,7 +46,7 @@ rec {
 
     vendorHash = null;
 
-    CGO_ENABLED = 0;
+    env.CGO_ENABLED = 0;
 
     ldflags = [
       "-X github.com/loft-sh/devpod/pkg/version.version=v${version}"
@@ -104,12 +104,8 @@ rec {
 
       sourceRoot = "${src.name}/desktop/src-tauri";
 
-      cargoLock = {
-        lockFile = ./Cargo.lock;
-        outputHashes = {
-          "tauri-plugin-log-0.0.0" = "sha256-tM6oLJe/wwqDDNMKBeMa5nNVvsmi5b104xMOvtm974Y=";
-        };
-      };
+      useFetchCargoVendor = true;
+      cargoHash = "sha256-HD9b7OWilltL5Ymj28zoZwv5TJV3HT3LyCdagMqLH6E=";
 
       # Workaround:
       #   The `tauri` dependency features on the `Cargo.toml` file does not match the allowlist defined under `tauri.conf.json`.
@@ -122,7 +118,7 @@ rec {
         cp -r ${frontend-build} frontend-build
 
         substituteInPlace tauri.conf.json --replace '"distDir": "../dist",' '"distDir": "frontend-build",'
-      '' + lib.optionalString stdenv.isLinux ''
+      '' + lib.optionalString stdenv.hostPlatform.isLinux ''
         substituteInPlace $cargoDepsCopy/libappindicator-sys-*/src/lib.rs \
           --replace "libayatana-appindicator3.so.1" "${libayatana-appindicator}/lib/libayatana-appindicator3.so.1"
 
@@ -134,20 +130,20 @@ rec {
       nativeBuildInputs = [
         copyDesktopItems
         pkg-config
-      ] ++ lib.optionals stdenv.isLinux [
+      ] ++ lib.optionals stdenv.hostPlatform.isLinux [
         jq
-      ] ++ lib.optionals stdenv.isDarwin [
+      ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
         desktopToDarwinBundle
       ];
 
       buildInputs = [
-        libsoup
+        libsoup_2_4
         openssl
-      ] ++ lib.optionals stdenv.isLinux [
+      ] ++ lib.optionals stdenv.hostPlatform.isLinux [
         gtk3
         libayatana-appindicator
-        webkitgtk
-      ] ++ lib.optionals stdenv.isDarwin [
+        webkitgtk_4_0
+      ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
         darwin.apple_sdk.frameworks.Carbon
         darwin.apple_sdk.frameworks.Cocoa
         darwin.apple_sdk.frameworks.WebKit

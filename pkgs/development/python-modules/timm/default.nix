@@ -1,7 +1,7 @@
 {
   lib,
+  stdenv,
   buildPythonPackage,
-  pythonOlder,
   fetchFromGitHub,
 
   # build-system
@@ -14,24 +14,23 @@
   torch,
   torchvision,
 
-  # checks
+  # tests
   expecttest,
   pytestCheckHook,
   pytest-timeout,
+  pythonAtLeast,
 }:
 
 buildPythonPackage rec {
   pname = "timm";
-  version = "1.0.9";
+  version = "1.0.15";
   pyproject = true;
-
-  disabled = pythonOlder "3.8";
 
   src = fetchFromGitHub {
     owner = "huggingface";
     repo = "pytorch-image-models";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-iWZXile3hCUMx2q3VHJasX7rlJmT0OKBm9rkCXuWISw=";
+    tag = "v${version}";
+    hash = "sha256-TXc+D8GRrO46q88fOH44ZHKOGnCdP47ipEcobnGTxWU=";
   };
 
   build-system = [ pdm-backend ];
@@ -52,14 +51,24 @@ buildPythonPackage rec {
 
   pytestFlagsArray = [ "tests" ];
 
+  disabledTests =
+    lib.optionals
+      (
+        # RuntimeError: Dynamo is not supported on Python 3.13+
+        (pythonAtLeast "3.13")
+
+        # torch._dynamo.exc.BackendCompilerFailed: backend='inductor' raised:
+        # CppCompileError: C++ compile error
+        # OpenMP support not found.
+        || stdenv.hostPlatform.isDarwin
+      )
+      [
+        "test_kron"
+      ];
+
   disabledTestPaths = [
     # Takes too long and also tries to download models
     "tests/test_models.py"
-  ];
-
-  disabledTests = [
-    # AttributeError: 'Lookahead' object has no attribute '_optimizer_step_pre...
-    "test_lookahead"
   ];
 
   pythonImportsCheck = [

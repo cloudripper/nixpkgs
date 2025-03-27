@@ -12,22 +12,23 @@ let
 in
 rustPlatform.buildRustPackage rec {
   pname = "railway";
-  version = "3.14.0";
+  version = "3.23.0";
 
   src = fetchFromGitHub {
     owner = "railwayapp";
     repo = "cli";
     rev = "v${version}";
-    hash = "sha256-W9p987yn04Ije6JXFndHXB4rENGBTIiRmCh6fDhXJ4I=";
+    hash = "sha256-WxL5mETs7PVGhJcg1wVobYo/ETYFg3/1Fs/wJCJgKXg=";
   };
 
-  cargoHash = "sha256-/Lot/Cxg/BUp4MFp6VkJHR7jy7mUe7qwJDhPS8kOeUk=";
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-cMi3raSQgCSu6ZbiTgU2ABCy+NWJjY5IcWPJMMcmqyI=";
 
   nativeBuildInputs = [ pkg-config ];
 
   buildInputs =
     [ openssl ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       CoreServices
       Security
       SystemConfiguration

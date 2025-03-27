@@ -16,19 +16,19 @@
 
 let
   pname = "pgadmin";
-  version = "8.11";
-  yarnHash = "sha256-2N1UsGrR9rTIP50kn+gB+iGz9D/Dj0K5Y/10A5wPKTY=";
+  version = "9.1";
+  yarnHash = "sha256-RMsmYtesCaNI4SGH2QIdcZAivKp/a8Wo6cBzi13MXqs=";
 
   src = fetchFromGitHub {
     owner = "pgadmin-org";
     repo = "pgadmin4";
     rev = "REL-${lib.versions.major version}_${lib.versions.minor version}";
-    hash = "sha256-6v7/jFkWooUHztL+x6falD04XyDYa1beoY/yEpfbX4U=";
+    hash = "sha256-NqtdR0aX6PDskbA6+AaBMhyvuKjl/CHQso9V4Vpd+LU=";
   };
 
   # keep the scope, as it is used throughout the derivation and tests
   # this also makes potential future overrides easier
-  pythonPackages = python3.pkgs.overrideScope (final: prev: rec { });
+  pythonPackages = python3.pkgs.overrideScope (final: prev: { });
 
   offlineCache = fetchYarnDeps {
     yarnLock = ./yarn.lock;
@@ -39,7 +39,7 @@ let
   # skip tests on macOS which fail due to an error in keyring, see https://github.com/NixOS/nixpkgs/issues/281214
   skippedTests = builtins.concatStringsSep "," (
     [ "browser.tests.test_kerberos_with_mocking" ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       "browser.server_groups.servers.tests.test_all_server_get"
       "browser.server_groups.servers.tests.test_check_connect"
       "browser.server_groups.servers.tests.test_check_ssh_mock_connect"
@@ -78,7 +78,7 @@ pythonPackages.buildPythonApplication rec {
     sed 's|*|0|g' -i requirements.txt
     # remove packageManager from package.json so we can work without corepack
     substituteInPlace web/package.json \
-      --replace-fail "\"packageManager\": \"yarn@3.8.3\"" "\"\": \"\""
+      --replace-fail "\"packageManager\": \"yarn@3.8.7\"" "\"\": \"\""
     substituteInPlace pkg/pip/setup_pip.py \
       --replace-fail "req = req.replace('psycopg[c]', 'psycopg[binary]')" "req = req"
     ${lib.optionalString (!server-mode) ''
@@ -196,7 +196,6 @@ pythonPackages.buildPythonApplication rec {
     azure-identity
     sphinxcontrib-youtube
     dnspython
-    greenlet
     speaklater3
     google-auth-oauthlib
     google-api-python-client
@@ -205,6 +204,7 @@ pythonPackages.buildPythonApplication rec {
     rich
     jsonformatter
     libgravatar
+    setuptools
   ];
 
   passthru.tests = {
@@ -219,7 +219,7 @@ pythonPackages.buildPythonApplication rec {
   ];
 
   # sandboxing issues on aarch64-darwin, see https://github.com/NixOS/nixpkgs/issues/198495
-  doCheck = postgresql.doCheck;
+  doCheck = !postgresqlTestHook.meta.broken;
 
   checkPhase = ''
     runHook preCheck

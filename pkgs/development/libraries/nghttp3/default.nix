@@ -1,25 +1,32 @@
-{ lib, stdenv, fetchFromGitHub
-, cmake
-, CoreServices
-, curlHTTP3
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  CoreServices,
+  curlHTTP3,
 }:
 
 stdenv.mkDerivation rec {
   pname = "nghttp3";
-  version = "1.5.0";
+  version = "1.8.0";
 
   src = fetchFromGitHub {
     owner = "ngtcp2";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-sVEMFTe3+r11yz4gzV+0VC8ngaanoj27DLW5hakyc4Y=";
+    hash = "sha256-SWc7qTQjk03I24nYjzUnOj58ZuV3cbX0G5y4zXwiU4w=";
     fetchSubmodules = true;
   };
 
-  outputs = [ "out" "dev" "doc" ];
+  outputs = [
+    "out"
+    "dev"
+    "doc"
+  ];
 
   nativeBuildInputs = [ cmake ];
-  buildInputs = lib.optionals stdenv.isDarwin [
+  buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [
     CoreServices
   ];
 

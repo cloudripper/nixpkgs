@@ -29,19 +29,19 @@
 
 buildPythonPackage rec {
   pname = "etils";
-  version = "1.9.4";
+  version = "1.12.2";
   pyproject = true;
 
   disabled = pythonOlder "3.10";
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-+tlQQU8KHKWMcMcJFbABT5lT3ZvPiqlRoPdf+b7L6yQ=";
+    hash = "sha256-xrnh8M5m0bv1T5kgGwimC6OW00RtnrGNS8ObJqLhpe4=";
   };
 
   nativeBuildInputs = [ flit-core ];
 
-  passthru.optional-dependencies = rec {
+  optional-dependencies = rec {
     array-types = enp;
     eapp = [
       absl-py # FIXME package simple-parsing
@@ -91,7 +91,7 @@ buildPythonPackage rec {
     pytest-xdist
     pytestCheckHook
     yapf
-  ] ++ passthru.optional-dependencies.all;
+  ] ++ optional-dependencies.all;
 
   disabledTests = [
     "test_public_access" # requires network access

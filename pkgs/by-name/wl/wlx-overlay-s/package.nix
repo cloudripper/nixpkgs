@@ -5,7 +5,6 @@
   fontconfig,
   lib,
   libGL,
-  libuuid,
   libX11,
   libXext,
   libXrandr,
@@ -21,32 +20,23 @@
   shaderc,
   stdenv,
   testers,
-  vulkan-loader,
   wayland,
   wlx-overlay-s,
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "wlx-overlay-s";
-  version = "0.4.4";
+  version = "25.3.0";
 
   src = fetchFromGitHub {
     owner = "galister";
     repo = "wlx-overlay-s";
     rev = "v${version}";
-    hash = "sha256-+pWhtaYOzh7LPSCQeUTlU+/IxtcQTqRci9X7xEUV18U=";
+    hash = "sha256-m2YVXF9bEjovZOWa+X1CYHAUaAsUI4dBMG2ni3jP9L4=";
   };
 
-  cargoLock = {
-    lockFile = ./Cargo.lock;
-    outputHashes = {
-      "libmonado-rs-0.1.0" = "sha256-ja7OW/YSmfzaQoBhu6tec9v8fyNDknLekE2eY7McLPE=";
-      "openxr-0.18.0" = "sha256-ktkbhmExstkNJDYM/HYOwAwv3acex7P9SP0KMAOKhQk=";
-      "ovr_overlay-0.0.0" = "sha256-5IMEI0IPTacbA/1gibYU7OT6r+Bj+hlQjDZ3Kg0L2gw=";
-      "vulkano-0.34.0" = "sha256-o1KP/mscMG5j3U3xtei/2nMNEh7jLedcW1P0gL9Y1Rc=";
-      "wlx-capture-0.3.12" = "sha256-rZTJp7VhUvE/6lwESW2jKeGweFut6BvcxouG/nyl+GE=";
-    };
-  };
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-y4pWUQFPR0jOTdukQZe4d1v0DFDfQtAg0Bi4V4ue5+Y=";
 
   nativeBuildInputs = [
     makeWrapper
@@ -58,13 +48,15 @@ rustPlatform.buildRustPackage rec {
     alsa-lib
     dbus
     fontconfig
+    libGL
+    libX11
+    libXext
+    libXrandr
     libxkbcommon
     openvr
     openxr-loader
     pipewire
-    libX11
-    libXext
-    libXrandr
+    wayland
   ];
 
   env.SHADERC_LIB_DIR = "${lib.getLib shaderc}/lib";
@@ -74,16 +66,6 @@ rustPlatform.buildRustPackage rec {
       --replace '"pactl"' '"${lib.getExe' pulseaudio "pactl"}"'
 
     # TODO: src/res/keyboard.yaml references 'whisper_stt'
-  '';
-
-  postInstall = ''
-    patchelf $out/bin/wlx-overlay-s \
-      --add-needed ${lib.getLib wayland}/lib/libwayland-client.so.0 \
-      --add-needed ${lib.getLib libxkbcommon}/lib/libxkbcommon.so.0 \
-      --add-needed ${lib.getLib libGL}/lib/libEGL.so.1 \
-      --add-needed ${lib.getLib libGL}/lib/libGL.so.1 \
-      --add-needed ${lib.getLib vulkan-loader}/lib/libvulkan.so.1 \
-      --add-needed ${lib.getLib libuuid}/lib/libuuid.so.1
   '';
 
   passthru = {
@@ -98,7 +80,7 @@ rustPlatform.buildRustPackage rec {
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [ Scrumplex ];
     platforms = lib.platforms.linux;
-    broken = stdenv.isAarch64;
+    broken = stdenv.hostPlatform.isAarch64;
     mainProgram = "wlx-overlay-s";
   };
 }

@@ -15,7 +15,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "libwacom";
-  version = "2.12.2";
+  version = "2.15.0";
 
   outputs = [
     "out"
@@ -26,7 +26,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "linuxwacom";
     repo = "libwacom";
     rev = "libwacom-${finalAttrs.version}";
-    hash = "sha256-dxnXh+O/8q8ShsPbpqvaBPNQR6lJBphBolYTmcJEF/0=";
+    hash = "sha256-fc7ymkyIJ5BvrPxJg7Vw1h1mBy+icr+5kVDecODxRLQ=";
   };
 
   postPatch = ''
@@ -45,10 +45,16 @@ stdenv.mkDerivation (finalAttrs: {
     udev
     libevdev
     libgudev
+    (python3.withPackages (
+      pp: with pp; [
+        pp.libevdev
+        pp.pyudev
+      ]
+    ))
   ];
 
   mesonFlags = [
-    (lib.mesonEnable "tests" finalAttrs.doCheck)
+    (lib.mesonEnable "tests" finalAttrs.finalPackage.doCheck)
     (lib.mesonOption "sysconfdir" "/etc")
   ];
 

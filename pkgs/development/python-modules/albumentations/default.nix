@@ -9,61 +9,77 @@
 
   # dependencies
   albucore,
-  eval-type-backport,
   numpy,
-  opencv4,
+  opencv-python,
   pydantic,
   pyyaml,
-  scikit-image,
-  scikit-learn,
+  scipy,
 
+  # optional dependencies
+  huggingface-hub,
+  pillow,
+  torch,
+
+  # tests
   deepdiff,
   pytestCheckHook,
   pytest-mock,
-  torch,
+  scikit-image,
+  scikit-learn,
   torchvision,
 }:
 
 buildPythonPackage rec {
   pname = "albumentations";
-  version = "1.4.11";
+  version = "2.0.5";
   pyproject = true;
 
-  disabled = pythonOlder "3.8";
+  disabled = pythonOlder "3.9";
 
   src = fetchFromGitHub {
     owner = "albumentations-team";
     repo = "albumentations";
-    rev = "refs/tags/${version}";
-    hash = "sha256-1070V9+EZ4qrhxmbMyvTbu89pLoonrn0Peb8nwp2lwA=";
+    tag = version;
+    hash = "sha256-WqU25I1DxBqZAXd2+sNMUv/HOL4towlGTnFnpCGmMgY=";
   };
 
-  pythonRemoveDeps = [ "opencv-python" ];
+  patches = [
+    ./dont-check-for-updates.patch
+  ];
+
+  pythonRelaxDeps = [ "opencv-python" ];
 
   build-system = [ setuptools ];
 
   dependencies = [
     albucore
-    eval-type-backport
     numpy
-    opencv4
+    opencv-python
     pydantic
     pyyaml
-    scikit-image
-    scikit-learn
+    scipy
   ];
+
+  optional-dependencies = {
+    hub = [ huggingface-hub ];
+    pytorch = [ torch ];
+    text = [ pillow ];
+  };
 
   nativeCheckInputs = [
     deepdiff
     pytestCheckHook
     pytest-mock
+    scikit-image
+    scikit-learn
     torch
     torchvision
   ];
 
   disabledTests = [
-    # this test hangs up
-    "test_transforms"
+    "test_pca_inverse_transform"
+    # test hangs
+    "test_keypoint_remap_methods"
   ];
 
   pythonImportsCheck = [ "albumentations" ];

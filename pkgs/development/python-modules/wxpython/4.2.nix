@@ -4,7 +4,7 @@
   buildPythonPackage,
   setuptools,
   fetchPypi,
-  substituteAll,
+  replaceVars,
 
   # build
   autoPatchelfHook,
@@ -27,10 +27,9 @@
   libXtst,
   libXxf86vm,
   libglvnd,
-  mesa,
+  libgbm,
   pango,
-  SDL,
-  webkitgtk,
+  webkitgtk_4_0,
   wxGTK,
   xorgproto,
 
@@ -42,22 +41,22 @@
 
 buildPythonPackage rec {
   pname = "wxpython";
-  version = "4.2.1";
+  version = "4.2.2";
   format = "other";
 
   src = fetchPypi {
     pname = "wxPython";
     inherit version;
-    hash = "sha256-5I3iEaZga/By7D+neHcda3RsALf0uXDrWHKN31bRPVw=";
+    hash = "sha256-XbywZQ9n/cLFlleVolX/qj17CfsUmqjaLQ2apE444ro=";
   };
 
   patches = [
-    (substituteAll {
-      src = ./4.2-ctypes.patch;
+    (replaceVars ./4.2-ctypes.patch {
       libgdk = "${gtk3.out}/lib/libgdk-3.so";
       libpangocairo = "${pango}/lib/libpangocairo-1.0.so";
       libcairo = "${cairo}/lib/libcairo.so";
     })
+    ./0001-add-missing-bool-c.patch # Add missing bool.c from old source
   ];
 
   # https://github.com/wxWidgets/Phoenix/issues/2575
@@ -71,18 +70,16 @@ buildPythonPackage rec {
     attrdict
     pkg-config
     setuptools
-    SDL
     sip
     which
     wxGTK
-  ] ++ lib.optionals stdenv.isLinux [ autoPatchelfHook ];
+  ] ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
 
   buildInputs =
     [
       wxGTK
-      SDL
     ]
-    ++ lib.optionals stdenv.isLinux [
+    ++ lib.optionals stdenv.hostPlatform.isLinux [
       gst_all_1.gst-plugins-base
       gst_all_1.gstreamer
       libGL
@@ -92,8 +89,8 @@ buildPythonPackage rec {
       libXtst
       libXxf86vm
       libglvnd
-      mesa
-      webkitgtk
+      libgbm
+      webkitgtk_4_0
       xorgproto
     ];
 
@@ -108,7 +105,6 @@ buildPythonPackage rec {
 
     export DOXYGEN=${doxygen}/bin/doxygen
     export PATH="${wxGTK}/bin:$PATH"
-    export SDL_CONFIG="${SDL.dev}/bin/sdl-config"
     export WAF=$PWD/bin/waf
 
     ${python.pythonOnBuildForHost.interpreter} build.py -v --use_syswx dox etg sip --nodoc build_py

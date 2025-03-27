@@ -20,13 +20,28 @@ pnpmConfigHook() {
     cp -Tr "$pnpmDeps" "$STORE_PATH"
     chmod -R +w "$STORE_PATH"
 
+
+    # If the packageManager field in package.json is set to a different pnpm version than what is in nixpkgs,
+    # any pnpm command would fail in that directory, the following disables this
+    pushd ..
+    pnpm config set manage-package-manager-versions false
+    popd
+
     pnpm config set store-dir "$STORE_PATH"
 
-    echo "Installing dependencies"
-
     if [[ -n "$pnpmWorkspace" ]]; then
-        pnpmInstallFlags+=("--filter=$pnpmWorkspace")
+        echo "'pnpmWorkspace' is deprecated, please migrate to 'pnpmWorkspaces'."
+        exit 2
     fi
+
+    echo "Installing dependencies"
+    if [[ -n "$pnpmWorkspaces" ]]; then
+        local IFS=" "
+        for ws in $pnpmWorkspaces; do
+            pnpmInstallFlags+=("--filter=$ws")
+        done
+    fi
+
     runHook prePnpmInstall
 
     pnpm install \

@@ -5,22 +5,33 @@
   copyDesktopItems,
   desktop-file-utils,
   dotnetCorePackages,
-  fetchFromGitHub,
-  fontconfig,
+  fetchgit,
+  imagemagick,
   lib,
-  runCommand,
+  xdg-utils,
+  nix-update-script,
   pname ? "nexusmods-app",
 }:
+let
+  # From https://nexus-mods.github.io/NexusMods.App/developers/Contributing/#for-package-maintainers
+  constants = [
+    # Tell the app it is a distro package; affects wording in update prompts
+    "INSTALLATION_METHOD_PACKAGE_MANAGER"
+
+    # Don't include upstream's 7zz binary; we use the nixpkgs version
+    "NEXUSMODS_APP_USE_SYSTEM_EXTRACTOR"
+  ];
+in
 buildDotnetModule (finalAttrs: {
   inherit pname;
-  version = "0.4.1";
+  version = "0.8.3";
 
-  src = fetchFromGitHub {
-    owner = "Nexus-Mods";
-    repo = "NexusMods.App";
-    rev = "v${finalAttrs.version}";
+  src = fetchgit {
+    url = "https://github.com/Nexus-Mods/NexusMods.App.git";
+    rev = "refs/tags/v${finalAttrs.version}";
+    hash = "sha256-b6Tpwy0DepbT80+Jil8celeiNN3W+5prt57NjgLD+u0=";
     fetchSubmodules = true;
-    hash = "sha256-FzQphMhiC1g+6qmk/R1v4rq2ldy35NcaWm0RR1UlwLA=";
+    fetchLFS = true;
   };
 
   enableParallelBuilding = false;
@@ -33,45 +44,84 @@ buildDotnetModule (finalAttrs: {
   projectFile = "src/NexusMods.App/NexusMods.App.csproj";
   testProjectFile = "NexusMods.App.sln";
 
-  buildInputs = [ avalonia ];
+  buildInputs = [
+    # TODO: bump avalonia to 11.1.3
+    # avalonia
+  ];
 
-  nativeBuildInputs = [ copyDesktopItems ];
+  nativeCheckInputs = [ _7zz ];
 
-  nugetDeps = ./deps.nix;
+  nativeBuildInputs = [
+    copyDesktopItems
+    imagemagick # For resizing SVG icon in postInstall
+  ];
+
+  nugetDeps = ./deps.json;
   mapNuGetDependencies = true;
 
-  dotnet-sdk = dotnetCorePackages.sdk_8_0;
-  dotnet-runtime = dotnetCorePackages.runtime_8_0;
-
-  postConfigureNuGet = ''
-    dotnet add src/NexusMods.Icons/NexusMods.Icons.csproj package SkiaSharp -v 2.88.7
-  '';
-
-  preConfigure = ''
-    substituteInPlace Directory.Build.props \
-      --replace '</PropertyGroup>' '<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles></PropertyGroup>'
-  '';
+  dotnet-sdk = dotnetCorePackages.sdk_9_0;
+  dotnet-runtime = dotnetCorePackages.runtime_9_0;
 
   postPatch = ''
-    ln --force --symbolic "${lib.getExe _7zz}" src/ArchiveManagement/NexusMods.FileExtractor/runtimes/linux-x64/native/7zz
-
     # for some reason these tests fail (intermittently?) with a zero timestamp
     touch tests/NexusMods.UI.Tests/WorkspaceSystem/*.verified.png
+
+    # Bump StrawberryShake so we can drop .NET 8
+    # See https://github.com/Nexus-Mods/NexusMods.App/pull/2830
+    substituteInPlace Directory.Packages.props \
+      --replace-fail 'Include="StrawberryShake.Server" Version="14.1.0"' \
+                     'Include="StrawberryShake.Server" Version="15.0.3"'
   '';
 
   makeWrapperArgs = [
     "--prefix PATH : ${lib.makeBinPath finalAttrs.runtimeInputs}"
-    # Make associating with nxm links work on Linux
-    "--set APPIMAGE ${placeholder "out"}/bin/NexusMods.App"
   ];
 
-  runtimeInputs = [ desktop-file-utils ];
+  postInstall = ''
+    # Desktop entry
+    # As per #308324, use mainProgram from PATH, instead of $out/bin/NexusMods.App
+    install -D -m 444 -t $out/share/applications src/NexusMods.App/com.nexusmods.app.desktop
+    substituteInPlace $out/share/applications/com.nexusmods.app.desktop \
+      --replace-fail '${"$"}{INSTALL_EXEC}' "${finalAttrs.meta.mainProgram}"
+
+    # AppStream metadata
+    install -D -m 444 -t $out/share/metainfo src/NexusMods.App/com.nexusmods.app.metainfo.xml
+
+    # Icon
+    icon=src/NexusMods.App/icon.svg
+    install -D -m 444 -T $icon $out/share/icons/hicolor/scalable/apps/com.nexusmods.app.svg
+
+    # Bitmap icons
+    for i in 16 24 48 64 96 128 256 512; do
+      size=''${i}x''${i}
+      dir=$out/share/icons/hicolor/$size/apps
+      mkdir -p $dir
+      magick -background none $icon -resize $size $dir/com.nexusmods.app.png
+    done
+  '';
+
+  runtimeInputs = [
+    _7zz
+    desktop-file-utils
+    xdg-utils
+  ];
 
   executables = [ "NexusMods.App" ];
 
+  dotnetBuildFlags = [
+    # From https://github.com/Nexus-Mods/NexusMods.App/blob/v0.7.0/src/NexusMods.App/app.pupnet.conf#L38
+    "--property:Version=${finalAttrs.version}"
+    "--property:TieredCompilation=true"
+    "--property:PublishReadyToRun=true"
+    "--property:DefineConstants=${lib.strings.concatStringsSep "%3B" constants}"
+  ];
+
   doCheck = true;
 
-  dotnetTestFlags = [ "--environment=USER=nobody" ];
+  dotnetTestFlags = [
+    "--environment=USER=nobody"
+    "--property:DefineConstants=${lib.strings.concatStringsSep "%3B" constants}"
+  ];
 
   testFilters = [
     "Category!=Disabled"
@@ -81,39 +131,22 @@ buildDotnetModule (finalAttrs: {
 
   disabledTests =
     [
-      "NexusMods.UI.Tests.ImageCacheTests.Test_LoadAndCache_RemoteImage"
-      "NexusMods.UI.Tests.ImageCacheTests.Test_LoadAndCache_ImageStoredFile"
+      # Fails attempting to download game hashes DB from github:
+      # HttpRequestException : Resource temporarily unavailable (github.com:443)
+      "NexusMods.DataModel.SchemaVersions.Tests.LegacyDatabaseSupportTests.TestDatabase"
+      "NexusMods.DataModel.SchemaVersions.Tests.MigrationSpecificTests.TestsFor_0001_ConvertTimestamps.OldTimestampsAreInRange"
+      "NexusMods.DataModel.SchemaVersions.Tests.MigrationSpecificTests.TestsFor_0003_FixDuplicates.No_Duplicates"
+      "NexusMods.DataModel.SchemaVersions.Tests.MigrationSpecificTests.TestsFor_0004_RemoveGameFiles.Test"
+
+      # Fails attempting to fetch SMAPI version data from github:
+      # https://github.com/erri120/smapi-versions/raw/main/data/game-smapi-versions.json
+      "NexusMods.Games.StardewValley.Tests.SMAPIGameVersionDiagnosticEmitterTests.Test_TryGetLastSupportedSMAPIVersion"
     ]
     ++ lib.optionals (!_7zz.meta.unfree) [
       "NexusMods.Games.FOMOD.Tests.FomodXmlInstallerTests.InstallsFilesSimple_UsingRar"
     ];
 
-  passthru = {
-    tests =
-      let
-        runTest =
-          name: script:
-          runCommand "${pname}-test-${name}" { nativeBuildInputs = [ finalAttrs.finalPackage ]; } ''
-            ${script}
-            touch $out
-          '';
-      in
-      {
-        serve = runTest "serve" ''
-          NexusMods.App
-        '';
-        help = runTest "help" ''
-          NexusMods.App --help
-        '';
-        associate-nxm = runTest "associate-nxm" ''
-          NexusMods.App associate-nxm
-        '';
-        list-tools = runTest "list-tools" ''
-          NexusMods.App list-tools
-        '';
-      };
-    updateScript = ./update.bash;
-  };
+  passthru.updateScript = nix-update-script { };
 
   meta = {
     mainProgram = "NexusMods.App";

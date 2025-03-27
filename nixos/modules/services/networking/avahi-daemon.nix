@@ -91,7 +91,8 @@ in
 
     ipv6 = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = config.networking.enableIPv6;
+      defaultText = lib.literalExpression "config.networking.enableIPv6";
       description = "Whether to use IPv6.";
     };
 
@@ -304,6 +305,12 @@ in
       description = "Avahi mDNS/DNS-SD Stack";
       wantedBy = [ "multi-user.target" ];
       requires = [ "avahi-daemon.socket" ];
+      documentation = [
+        "man:avahi-daemon(8)"
+        "man:avahi-daemon.conf(5)"
+        "man:avahi.hosts(5)"
+        "man:avahi.service(5)"
+      ];
 
       # Make NSS modules visible so that `avahi_nss_support ()' can
       # return a sensible value.
@@ -317,6 +324,47 @@ in
         Type = "dbus";
         ExecStart = "${cfg.package}/sbin/avahi-daemon --syslog -f ${avahiDaemonConf}";
         ConfigurationDirectory = "avahi/services";
+
+        # Hardening
+        CapabilityBoundingSet = [
+          # https://github.com/avahi/avahi/blob/v0.9-rc1/avahi-daemon/caps.c#L38
+          "CAP_SYS_CHROOT"
+          "CAP_SETUID"
+          "CAP_SETGID"
+        ];
+        DevicePolicy = "closed";
+        LockPersonality = true;
+        MemoryDenyWriteExecute = true;
+        NoNewPrivileges = true;
+        PrivateDevices = true;
+        PrivateTmp = true;
+        PrivateUsers = false;
+        ProcSubset = "pid";
+        ProtectClock = true;
+        ProtectControlGroups = true;
+        ProtectHome = true;
+        ProtectHostname = true;
+        ProtectKernelLogs = true;
+        ProtectKernelModules = true;
+        ProtectKernelTunables = true;
+        ProtectProc = "invisible";
+        ProtectSystem = "strict";
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+          "AF_NETLINK"
+          "AF_UNIX"
+        ];
+        RestrictNamespaces = true;
+        RestrictRealtime = true;
+        RestrictSUIDSGID = true;
+        SystemCallArchitectures = "native";
+        SystemCallFilter = [
+          "@system-service"
+          "~@privileged"
+          "@chown setgroups setresuid"
+        ];
+        UMask = "0077";
       };
     };
 

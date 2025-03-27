@@ -23,13 +23,13 @@
 
 stdenv.mkDerivation rec {
   pname = "emilua-qt6";
-  version = "1.0.3";
+  version = "1.2.0";
 
   src = fetchFromGitLab {
     owner = "emilua";
     repo = "qt6";
     rev = "v${version}";
-    hash = "sha256-azMnM17HQMzC0ExgWurQzbR3fX9EwBRSu4kVTm3U2Ic=";
+    hash = "sha256-/GIEMkJnF/nubbTya9SDm3Zb8dvdbPQCMrgKtRtIrMs=";
   };
 
   buildInputs = with qt6Packages; [

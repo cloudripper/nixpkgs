@@ -11,6 +11,7 @@
   huggingface-hub,
   protobuf,
   regex,
+  safetensors,
   sentencepiece,
   timm,
   torch,
@@ -28,14 +29,14 @@
 }:
 buildPythonPackage rec {
   pname = "open-clip-torch";
-  version = "2.26.1";
+  version = "2.31.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "mlfoundations";
     repo = "open_clip";
-    rev = "refs/tags/v${version}";
-    hash = "sha256-XjPOsGet8VNzwEwzz14f1nF3XOgpkb4OERIc6VrDDZ8=";
+    tag = "v${version}";
+    hash = "sha256-VOfjxQjIC6IL7WyhTc8JpIAa9eknmU4LpnA9DtQJ+oQ=";
   };
 
   build-system = [ pdm-backend ];
@@ -45,6 +46,7 @@ buildPythonPackage rec {
     huggingface-hub
     protobuf
     regex
+    safetensors
     sentencepiece
     timm
     torch
@@ -79,7 +81,7 @@ buildPythonPackage rec {
       # fails due to type errors
       "test_num_shards"
     ]
-    ++ lib.optionals (stdenv.isAarch64 && stdenv.isLinux) [
+    ++ lib.optionals (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) [
       "test_training"
       "test_training_coca"
       "test_training_unfreezing_vit"
@@ -89,7 +91,7 @@ buildPythonPackage rec {
   meta = {
     description = "Open source implementation of CLIP";
     homepage = "https://github.com/mlfoundations/open_clip";
-    changelog = "https://github.com/mlfoundations/open_clip/releases/tag/v${version}";
+    changelog = "https://github.com/mlfoundations/open_clip/releases/tag/${src.tag}";
     license = lib.licenses.asl20;
     maintainers = with lib.maintainers; [ iynaix ];
     mainProgram = "open-clip";

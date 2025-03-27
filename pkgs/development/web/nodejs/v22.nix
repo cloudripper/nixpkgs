@@ -5,15 +5,11 @@ let
     inherit openssl;
     python = python3;
   };
-
-  gypPatches = callPackage ./gyp-patches.nix { } ++ [
-    ./gyp-patches-v22-import-sys.patch
-  ];
 in
 buildNodejs {
   inherit enableNpm;
-  version = "22.8.0";
-  sha256 = "f130e82176d1ee0702d99afc1995d0061bf8ed357c38834a32a08c9ef74f1ac7";
+  version = "22.14.0";
+  sha256 = "c609946bf793b55c7954c26582760808d54c16185d79cb2fb88065e52de21914";
   patches = [
     ./configure-emulator.patch
     ./configure-armv6-vfpv2.patch
@@ -22,5 +18,5 @@ buildNodejs {
     ./node-npm-build-npm-package-logic.patch
     ./use-correct-env-in-tests.patch
     ./bin-sh-node-run-v22.patch
-  ] ++ gypPatches;
+  ];
 }

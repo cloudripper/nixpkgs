@@ -1,20 +1,22 @@
-{ lib
-, fetchFromGitHub
-, python3Packages
-, installShellFiles
-, scdoc
+{
+  lib,
+  fetchFromGitHub,
+  python3Packages,
+  installShellFiles,
+  scdoc,
+  ffmpeg,
 }:
 
 python3Packages.buildPythonApplication rec {
   pname = "twitch-dl";
-  version = "2.9.2";
+  version = "2.11.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "ihabunek";
     repo = "twitch-dl";
-    rev = "refs/tags/${version}";
-    hash = "sha256-BIE3+SDmc5ggF9P+qeloI1JYYrEtOJQ/8oDR76i0t6c=";
+    tag = version;
+    hash = "sha256-L+IbcSUaxhTg2slNc5x1VJPnA5e2qrPEeWjspK2COAI=";
   };
 
   pythonRelaxDeps = [
@@ -58,6 +60,13 @@ python3Packages.buildPythonApplication rec {
     "twitchdl.commands"
   ];
 
+  makeWrapperArgs = [
+    "--prefix"
+    "PATH"
+    ":"
+    (lib.makeBinPath [ ffmpeg ])
+  ];
+
   postInstall = ''
     scdoc < twitch-dl.1.scd > twitch-dl.1
     installManPage twitch-dl.1
@@ -70,9 +79,12 @@ python3Packages.buildPythonApplication rec {
   meta = with lib; {
     description = "CLI tool for downloading videos from Twitch";
     homepage = "https://github.com/ihabunek/twitch-dl";
-    changelog = "https://github.com/ihabunek/twitch-dl/blob/${src.rev}/CHANGELOG.md";
+    changelog = "https://github.com/ihabunek/twitch-dl/blob/${src.tag}/CHANGELOG.md";
     license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pbsds ];
+    maintainers = with maintainers; [
+      pbsds
+      hausken
+    ];
     mainProgram = "twitch-dl";
   };
 }
