@@ -194,6 +194,11 @@ stdenv.mkDerivation ({
     "--without-included-gettext"
     "--enable-linker-build-id"
     "--with-multilib-list="
+    # For native builds, headers are disabled via --without-headers, so fixincludes fails
+    # due to missing /usr/include. Providing a sysroot with glibc headers allows the build to succeed.
+  ] ++ lib.optionals (targetPlatform.config == hostPlatform.config) [
+    "--with-sysroot=${buildPackages.glibc.dev}"
+    "--with-native-system-header-dir=/include"
   ];
 
   postInstall = ''
